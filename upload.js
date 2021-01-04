@@ -142,9 +142,11 @@ var SM = {
             }
 
         });
-        
-        // warning 此处替换计算路径
-        var templateString = NSString.stringWithContentsOfFile_encoding_error("/Users/liyi/Desktop/newSketch2/my-plugin/src/library/template.html", 4, nil);
+
+        // 替换计算路径
+        var scriptPathStr = context.scriptPath.substring(0, context.scriptPath.lastIndexOf('/Sketch'))
+        // console.log(scriptPathStr + "/Resources/template.html")
+        var templateString = NSString.stringWithContentsOfFile_encoding_error(scriptPathStr + "/Resources/template.html", 4, nil);
         var afterTemplate = this.template(templateString, "langlanglanglanglanglanglang");
     },
     getSavePath: function(){
