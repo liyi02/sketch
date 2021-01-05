@@ -9,13 +9,11 @@
 //         return content;
 // }
 var scriptPathStr = context.scriptPath.substring(0, context.scriptPath.lastIndexOf('/Sketch'))
-console.log(scriptPathStr);
 var macOSVersion = NSDictionary.dictionaryWithContentsOfFile("/System/Library/CoreServices/SystemVersion.plist").objectForKey("ProductVersion") + "";
 var lang = NSUserDefaults.standardUserDefaults().objectForKey("AppleLanguages").objectAtIndex(0);
 var lang = (macOSVersion >= "10.12") ? lang.split("-").slice(0, -1).join("-") : lang;
 var language = NSString.stringWithContentsOfFile_encoding_error(scriptPathStr + "/Resources/zh-Hans.json", 4, nil);
 language = "I18N[\'" + "zh-cn" + "\'] = " + language;
-console.log(language);
     
 var SM = {
     init: function (context) {
@@ -275,7 +273,8 @@ var SM = {
                     exporting = false,
                     data = {
                         scale: 1,
-                        unit: "pt",
+                        unit: "px",
+                        colorFormat: "color-hex",
                         artboards: [],
                         slices: [],
                         colors: []
@@ -290,7 +289,7 @@ var SM = {
 
 
         coscript.scheduleWithRepeatingInterval_jsFunction(0, function (interval) {
-            if(!data.artboards[artboardIndex]){
+            if (!data.artboards[artboardIndex]) {
                         data.artboards.push({layers: [], notes: []});
                         self.maskCache = [];
                         self.maskObjectID = undefined;
@@ -298,17 +297,17 @@ var SM = {
             }
             if (!exporting) {
                 exporting = true;
-                var artboard = self.selectionArtboards[artboardIndex],
-                    page = artboard.parentGroup(),
-                    layer = artboard.children()[layerIndex],
-                    message = page.name() + ' - ' + artboard.name() + ' - ' + layer.name();
-                // log( page.name() + ' - ' + artboard.name() + ' - ' + layer.name());
+                var artboard = self.selectionArtboards[artboardIndex];
+                var page = artboard.parentGroup();
+                var layer = artboard.children()[layerIndex];
+
                 try {
                     self.getLayer(
                         artboard, // Sketch artboard element
                         layer, // Sketch layer element
                         data.artboards[artboardIndex] // Save to data
                     );
+                    
                     layerIndex++;
                     layerCount++;
                     exporting = false;
@@ -322,11 +321,32 @@ var SM = {
                     artboardRect = self.getRect(artboard),
                     page = artboard.parentGroup(),
                     slug = self.toSlug(page.name() + ' ' + artboard.name());
+
+                    data.artboards[artboardIndex].pageName = self.toHTMLEncode(self.emojiToEntities(page.name()));
+                    data.artboards[artboardIndex].pageObjectID = self.toJSString(page.objectID());
+                    data.artboards[artboardIndex].name = self.toHTMLEncode(self.emojiToEntities(artboard.name()));
+                    data.artboards[artboardIndex].slug = slug;
+                    data.artboards[artboardIndex].objectID = self.toJSString(artboard.objectID());
+                    data.artboards[artboardIndex].width = artboardRect.width;
+                    data.artboards[artboardIndex].height = artboardRect.height;
+                    
+                    var newData = JSON.parse(JSON.stringify(data));
+                    newData.artboards = [data.artboards[artboardIndex]];
+
                     layerIndex = 0;
                     artboardIndex++;
                 }
 
                 if (artboardIndex >= self.selectionArtboards.length) {
+                    var templateString = NSString.stringWithContentsOfFile_encoding_error(scriptPathStr + "/Resources/template.html", 4, nil);
+                    var afterTemplate = self.template(templateString, { lang: language, data: JSON.stringify(newData) });
+                    self.writeFile({
+                                        content: afterTemplate,
+                                        path: self.toJSString(savePath),
+                                        fileName: "index.html"
+                                    });
+                    var selectingPath = savePath + "/index.html";
+                    NSWorkspace.sharedWorkspace().activateFileViewerSelectingURLs([NSURL.fileURLWithPath(selectingPath)]);
                     self.wantsStop = true;
                 }
                 
@@ -336,21 +356,6 @@ var SM = {
             }
 
         });
-        
-        // warning 此处替换计算路径
-        var newData =  JSON.parse(JSON.stringify(data));
-        newData.artboards = [data.artboards[artboardIndex]];
-        var templateString = NSString.stringWithContentsOfFile_encoding_error(scriptPathStr + "/Resources/template.html", 4, nil);
-
-        var afterTemplate = this.template(templateString, { lang: language, data: JSON.stringify(newData) });
-        self.writeFile({
-                                        content: afterTemplate,
-                                        path: self.toJSString(savePath),
-                                        fileName: "index.html"
-                                    });
-        var selectingPath = savePath + "/index.html";
-        NSWorkspace.sharedWorkspace().activateFileViewerSelectingURLs([NSURL.fileURLWithPath(selectingPath)]);
-        // console.log(afterTemplate);
     },
     getSavePath: function(){
         var savePanel = NSSavePanel.savePanel();
@@ -745,7 +750,7 @@ SM.extend({
             isShapeGroup: isShapeGroup
         }
     },
-    getLayer: function(artboard, layer, data, symbolLayer){
+    getLayer: function (artboard, layer, data, symbolLayer) {
         var artboardRect = artboard.absoluteRect(),
             group = layer.parentGroup(),
             layerStates = this.getStates(layer);
