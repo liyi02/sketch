@@ -8,11 +8,14 @@
 //         });
 //         return content;
 // }
+var scriptPathStr = context.scriptPath.substring(0, context.scriptPath.lastIndexOf('/Sketch'))
+console.log(scriptPathStr);
 var macOSVersion = NSDictionary.dictionaryWithContentsOfFile("/System/Library/CoreServices/SystemVersion.plist").objectForKey("ProductVersion") + "";
 var lang = NSUserDefaults.standardUserDefaults().objectForKey("AppleLanguages").objectAtIndex(0);
 var lang = (macOSVersion >= "10.12") ? lang.split("-").slice(0, -1).join("-") : lang;
-var language = NSString.stringWithContentsOfFile_encoding_error("/Users/liyi/Desktop/newSketch2/my-plugin/src/library/i18n/zh-Hans.json", 4, nil);
+var language = NSString.stringWithContentsOfFile_encoding_error(scriptPathStr + "/Resources/zh-Hans.json", 4, nil);
 language = "I18N[\'" + "zh-cn" + "\'] = " + language;
+console.log(language);
     
 var SM = {
     init: function (context) {
@@ -256,19 +259,13 @@ var SM = {
     export: function () {
         var self = this;
         this.document = context.document;
-        // console.log(this.document);
 
         var page = this.document.currentPage();
-        // console.log(page);
         var artboard = page.currentArtboard();
         this.selectionArtboards = [artboard];
-        
-        // wanging一会删除
-        var savePath = "/Users/liyi/Documents/保险"; 
-
+    
         // wanrning：此处已经处理好
-        // var savePath = this.getSavePath();
-        // console.log(savePath);
+        var savePath = this.getSavePath();
         var index1 = 0;
 
         var idx = 1,
@@ -321,7 +318,6 @@ var SM = {
                 }
 
                 if (layerIndex >= artboard.children().length) {
-                    // console.log("layerIndex >= artboard.children()");
                     var objectID = artboard.objectID(),
                     artboardRect = self.getRect(artboard),
                     page = artboard.parentGroup(),
@@ -335,7 +331,6 @@ var SM = {
                 }
                 
                 if (self.wantsStop === true) {
-                    // console.log("已经停止了");
                     return interval.cancel();
                 }
             }
@@ -345,10 +340,7 @@ var SM = {
         // warning 此处替换计算路径
         var newData =  JSON.parse(JSON.stringify(data));
         newData.artboards = [data.artboards[artboardIndex]];
-        var scriptPathStr = context.scriptPath.substring(0, context.scriptPath.lastIndexOf('/Sketch'))
-        console.log(scriptPathStr);
         var templateString = NSString.stringWithContentsOfFile_encoding_error(scriptPathStr + "/Resources/template.html", 4, nil);
-        console.log(templateString);
 
         var afterTemplate = this.template(templateString, { lang: language, data: JSON.stringify(newData) });
         self.writeFile({
