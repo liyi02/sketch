@@ -679,51 +679,6 @@ SM.extend({
 
 // help.js
 SM.extend({
-    mathHalf: function(number){
-        return Math.round( number / 2 );
-    },
-    convertUnit: function(length, isText, percentageType){
-        if(length.length){
-            var units = this.configs.unit.split("/"),
-                unit = units[0];
-
-            if( units.length > 1 && isText){
-                unit = units[1];
-            }
-
-            var scale = this.configs.scale;
-            var tempLegth = [];
-
-            length.forEach(function(element) {
-                tempLegth.push(Math.round( element / scale * 10 ) / 10);
-            });
-
-            return tempLegth.join(unit + ' ') + unit;
-
-        } else {
-
-            if(percentageType && this.artboard){
-                var artboardRect = this.getRect( this.artboard );
-                if (percentageType == "width") {
-                     return Math.round((length / artboardRect.width) * 1000) / 10 + "%";
-                }
-                else if(percentageType == "height"){
-                    return Math.round((length / artboardRect.height) * 1000) / 10 + "%";
-                }
-            }
-
-            var length = Math.round( length / this.configs.scale * 10 ) / 10,
-                units = this.configs.unit.split("/"),
-                unit = units[0];
-
-            if( units.length > 1 && isText){
-                unit = units[1];
-            }
-
-            return length + unit;
-        }
-
-    },
     toHex:function(c) {
         var hex = Math.round(c).toString(16).toUpperCase();
         return hex.length == 1 ? "0" + hex :hex;
@@ -735,14 +690,6 @@ SM.extend({
             g: this.toHex(result[2]),
             b: this.toHex(result[3])
         } : null;
-    },
-    isIntersect: function(targetRect, layerRect){
-        return !(
-            targetRect.maxX <= layerRect.x ||
-            targetRect.x >= layerRect.maxX ||
-            targetRect.y >= layerRect.maxY ||
-            targetRect.maxY <= layerRect.y
-        );
     },
     getDistance: function(targetRect, containerRect){
         var containerRect = containerRect || this.getRect(this.current);
@@ -788,38 +735,6 @@ SM.extend({
             return queryResult;
         } else {
             return false;
-        }
-    },
-    clearAllMarks: function(){
-        var layers = this.page.children().objectEnumerator();
-        while(layer = layers.nextObject()) {
-            if(this.is(layer, MSLayerGroup) && this.regexNames.exec(layer.name())){
-                this.removeLayer(layer)
-            }
-        }
-    },
-    toggleHidden: function(){
-        var isHidden = (this.configs.isHidden)? false : !Boolean(this.configs.isHidden);
-        this.configs = this.setConfigs({isHidden: isHidden});
-
-        var layers = this.page.children().objectEnumerator();
-
-        while(layer = layers.nextObject()) {
-            if(this.is(layer, MSLayerGroup) && this.regexNames.exec(layer.name())){
-                layer.setIsVisible(!isHidden);
-            }
-        }
-    },
-    toggleLocked: function(){
-        var isLocked = (this.configs.isLocked)? false : !Boolean(this.configs.isLocked);
-        this.configs = this.setConfigs({isLocked: isLocked});
-
-        var layers = this.page.children().objectEnumerator();
-
-        while(layer = layers.nextObject()) {
-            if(this.is(layer, MSLayerGroup) && this.regexNames.exec(layer.name())){
-                layer.setIsLocked(isLocked);
-            }
         }
     },
 });
