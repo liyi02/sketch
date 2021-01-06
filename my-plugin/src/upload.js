@@ -1,13 +1,3 @@
-// function template (content, data) {
-//         var content = content.replace(new RegExp("\\<\\!\\-\\-\\s([^\\s\\-\\-\\>]+)\\s\\-\\-\\>", "gi"), function($0, $1) {
-//             if ($1 in data) {
-//                 return data[$1];
-//             } else {
-//                 return $0;
-//             }
-//         });
-//         return content;
-// }
 var scriptPathStr = context.scriptPath.substring(0, context.scriptPath.lastIndexOf('/Sketch'))
 var macOSVersion = NSDictionary.dictionaryWithContentsOfFile("/System/Library/CoreServices/SystemVersion.plist").objectForKey("ProductVersion") + "";
 var lang = NSUserDefaults.standardUserDefaults().objectForKey("AppleLanguages").objectAtIndex(0);
@@ -522,14 +512,15 @@ SM.extend({
             height: Math.round( rect.height() * 10 ) / 10
         };
     },
-    colorToJSON: function(color) {
+    colorToJSON: function (color) {
+        var hexRGB = "#" + this.toHex(color.red() * 255) + this.toHex(color.green() * 255) + this.toHex(color.blue() * 255);
         return {
             r: Math.round(color.red() * 255),
             g: Math.round(color.green() * 255),
             b: Math.round(color.blue() * 255),
             a: color.alpha(),
-            "color-hex": color.immutableModelObject().stringValueWithAlpha(false) + " " + Math.round(color.alpha() * 100) + "%",
-            "argb-hex": "#" + this.toHex(color.alpha() * 255) + color.immutableModelObject().stringValueWithAlpha(false).replace("#", ""),
+            "color-hex": hexRGB + " " + Math.round(color.alpha() * 100) + "%",
+            "argb-hex": "#" + this.toHex(color.alpha() * 255) + hexRGB.replace("#", ""),
             "css-rgba": "rgba(" + [
                             Math.round(color.red() * 255),
                             Math.round(color.green() * 255),
