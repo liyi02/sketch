@@ -275,95 +275,94 @@ var SM = {
                 self.maskCache = [];
         self.wantsStop = false;
 
-
-
-
-        coscript.scheduleWithRepeatingInterval_jsFunction(0, function (interval) {
-            if (!data.artboards[artboardIndex]) {
-                        data.artboards.push({layers: [], notes: []});
-                        self.maskCache = [];
-                        self.maskObjectID = undefined;
-                        self.maskRect = undefined;
-            }
-            if (!exporting) {
-                exporting = true;
-                var artboard = self.selectionArtboards[artboardIndex];
-                var page = artboard.parentGroup();
-                var layer = artboard.children()[layerIndex];
-
-                try {
-                    self.getLayer(
-                        artboard, // Sketch artboard element
-                        layer, // Sketch layer element
-                        data.artboards[artboardIndex] // Save to data
-                    );
+        if (savePath) {
+            this.savePath = savePath
+            coscript.scheduleWithRepeatingInterval_jsFunction(0, function (interval) {
+                if (!data.artboards[artboardIndex]) {
+                            data.artboards.push({layers: [], notes: []});
+                            self.maskCache = [];
+                            self.maskObjectID = undefined;
+                            self.maskRect = undefined;
+                }
+                if (!exporting) {
+                    exporting = true;
+                    var artboard = self.selectionArtboards[artboardIndex];
+                    var page = artboard.parentGroup();
+                    var layer = artboard.children()[layerIndex];
+    
+                    try {
+                        self.getLayer(
+                            artboard, // Sketch artboard element
+                            layer, // Sketch layer element
+                            data.artboards[artboardIndex] // Save to data
+                        );
+                        
+                        layerIndex++;
+                        layerCount++;
+                        exporting = false;
+                    } catch (e) {
+                        self.wantsStop = true;
+                        log(e)
+                    }
                     
-                    layerIndex++;
-                    layerCount++;
-                    exporting = false;
-                } catch (e) {
-                    self.wantsStop = true;
-                    log(e)
-                }
-                
-                console.log("进度：" + (layerCount / artboard.children().length))
-                if (layerIndex >= artboard.children().length) {
-                    console.log("成了！")
-                    var objectID = artboard.objectID(),
-                    artboardRect = self.getRect(artboard),
-                    page = artboard.parentGroup(),
-                    slug = self.toSlug(page.name() + ' ' + artboard.name());
-
-                    data.artboards[artboardIndex].pageName = self.toHTMLEncode(self.emojiToEntities(page.name()));
-                    data.artboards[artboardIndex].pageObjectID = self.toJSString(page.objectID());
-                    data.artboards[artboardIndex].name = self.toHTMLEncode(self.emojiToEntities(artboard.name()));
-                    data.artboards[artboardIndex].slug = slug;
-                    data.artboards[artboardIndex].objectID = self.toJSString(artboard.objectID());
-                    data.artboards[artboardIndex].width = artboardRect.width;
-                    data.artboards[artboardIndex].height = artboardRect.height;
+                    console.log("进度：" + (layerCount / artboard.children().length))
+                    if (layerIndex >= artboard.children().length) {
+                        console.log("成了！")
+                        var objectID = artboard.objectID(),
+                        artboardRect = self.getRect(artboard),
+                        page = artboard.parentGroup(),
+                        slug = self.toSlug(page.name() + ' ' + artboard.name());
+    
+                        data.artboards[artboardIndex].pageName = self.toHTMLEncode(self.emojiToEntities(page.name()));
+                        data.artboards[artboardIndex].pageObjectID = self.toJSString(page.objectID());
+                        data.artboards[artboardIndex].name = self.toHTMLEncode(self.emojiToEntities(artboard.name()));
+                        data.artboards[artboardIndex].slug = slug;
+                        data.artboards[artboardIndex].objectID = self.toJSString(artboard.objectID());
+                        data.artboards[artboardIndex].width = artboardRect.width;
+                        data.artboards[artboardIndex].height = artboardRect.height;
+                        
+                        var newData = JSON.parse(JSON.stringify(data));
+                        newData.artboards = [data.artboards[artboardIndex]];
+    
+                        data.artboards[artboardIndex].imagePath = "preview/" + encodeURI(slug) + ".png";
+    
+                        self.exportImage({
+                                layer: artboard,
+                                path: self.toJSString(savePath) + "/preview",
+                                scale: 2,
+                                // name: objectID,
+                                name: slug
+                            });
+    
+                        self.writeFile({
+                                content: "<meta http-equiv=\"refresh\" content=\"0;url=../index.html#artboard" + artboardIndex + "\">",
+                                path: self.toJSString(savePath) + "/links",
+                                fileName: slug + ".html"
+                            });
+    
+                        layerIndex = 0;
+                        artboardIndex++;
+                    }
+    
+                    if (artboardIndex >= self.selectionArtboards.length) {
+                        var templateString = NSString.stringWithContentsOfFile_encoding_error(scriptPathStr + "/Resources/template.html", 4, nil);
+                        var afterTemplate = self.template(templateString, { lang: language, data: JSON.stringify(newData) });
+                        self.writeFile({
+                                            content: afterTemplate,
+                                            path: self.toJSString(savePath),
+                                            fileName: "index.html"
+                                        });
+                        var selectingPath = savePath + "/index.html";
+                        NSWorkspace.sharedWorkspace().activateFileViewerSelectingURLs([NSURL.fileURLWithPath(selectingPath)]);
+                        self.wantsStop = true;
+                    }
                     
-                    var newData = JSON.parse(JSON.stringify(data));
-                    newData.artboards = [data.artboards[artboardIndex]];
-
-                    data.artboards[artboardIndex].imagePath = "preview/" + encodeURI(slug) + ".png";
-
-                    self.exportImage({
-                            layer: artboard,
-                            path: self.toJSString(savePath) + "/preview",
-                            scale: 2,
-                            // name: objectID,
-                            name: slug
-                        });
-
-                    self.writeFile({
-                            content: "<meta http-equiv=\"refresh\" content=\"0;url=../index.html#artboard" + artboardIndex + "\">",
-                            path: self.toJSString(savePath) + "/links",
-                            fileName: slug + ".html"
-                        });
-
-                    layerIndex = 0;
-                    artboardIndex++;
+                    if (self.wantsStop === true) {
+                        return interval.cancel();
+                    }
                 }
-
-                if (artboardIndex >= self.selectionArtboards.length) {
-                    var templateString = NSString.stringWithContentsOfFile_encoding_error(scriptPathStr + "/Resources/template.html", 4, nil);
-                    var afterTemplate = self.template(templateString, { lang: language, data: JSON.stringify(newData) });
-                    self.writeFile({
-                                        content: afterTemplate,
-                                        path: self.toJSString(savePath),
-                                        fileName: "index.html"
-                                    });
-                    var selectingPath = savePath + "/index.html";
-                    NSWorkspace.sharedWorkspace().activateFileViewerSelectingURLs([NSURL.fileURLWithPath(selectingPath)]);
-                    self.wantsStop = true;
-                }
-                
-                if (self.wantsStop === true) {
-                    return interval.cancel();
-                }
-            }
-
-        });
+            });
+        }
     },
     getSavePath: function(){
         var savePanel = NSSavePanel.savePanel();
